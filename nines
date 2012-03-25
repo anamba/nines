@@ -1,0 +1,78 @@
+#!/usr/bin/env ruby
+
+require 'rubygems'
+require 'yaml'
+require 'dnsruby'
+require 'net/ping'
+
+@@config = YAML.load(File.read('config.yml'))
+@@logfile = @@config['logfile'] || 'nines.log'
+@@pidfile = @@config['pidfile'] || 'nines.pid'
+
+
+# do some config checks
+begin
+  File.open(@@logfile, 'a') { }
+rescue Exception => e
+  puts "Couldn't open #{@@logfile} for logging (error: #{e})"
+end
+begin
+  File.open(@@pidfile, 'a') { }
+rescue Exception => e
+  puts "Couldn't write pid to #{@@pidfile} (error: #{e})"
+end
+
+@@config['hosts'].each do |host, options|
+  # make sure each has a valid hostname at least
+  unless options['hostname'] && Dnsruby::Resolv.getaddress(options['hostname'])
+    puts "Error: host #{host} has invalid hostname '#{options['hostname']}'"
+    exit 1
+  end
+end
+
+
+# then fork and detach
+if pid = fork
+  File.open(@@pidfile, 'w') { |f| f.print pid }
+  puts "Background process started with pid #{pid}"
+  exit 0
+end
+
+logger = File.open(@@logfile, 'a')
+logger.sync = 1
+logger.puts "[#{Time.now}] - nines starting"
+
+# iterate through config
+threads = []
+@@config['hosts'].each do |host, options|
+  logger.puts "Starting up checks for #{host}"
+  hostname = options['hostname']
+  address = Dnsruby::Resolv.getaddress(options['hostname'])
+  
+  options.each do |opt, val|
+    case opt
+    when 'http-check'
+    when 'ping-check'
+      threads << Thread.new(Thread.current) { |parent|
+        # begin
+          timeout = options['ping-check']['timeout_sec'] || 5
+          pinger = Net::Ping::External.new(hostname, nil, timeout)
+          if pinger.ping?
+            logger.puts "[#{host}] Pinging #{hostname} (#{address}) with timeout #{timeout}: success!"
+          else
+            logger.puts "[#{host}] Pinging #{hostname} (#{address}) with timeout #{timeout}: failed!"
+            # do some notification stuff
+          end
+        # rescue Exception => e
+          # parent.raise e
+        # end
+      }
+    end
+  end
+end
+
+threads.each { |t| t.join if t.alive? }
+
+logger.puts "[#{Time.now}] - nines finished"
+logger.close
+puts "Background process finished"

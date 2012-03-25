@@ -1,0 +1,35 @@
+---
+logfile: nines.log
+pidfile: nines.pid
+
+contacts:
+  admin-standard:
+    email: admin@example.com
+  admin-urgent:
+    email: admin-sms@example.com
+    twitter: companyabc_oncall
+
+defaults:
+  notify:
+    admin-standard:
+      after_failures: 2
+    admin-urgent:
+      after_failures: 5
+
+hosts:
+  web1:
+    hostname: web1.mydomain.net
+    http-check:
+      port: 80
+      timeout_sec: 5
+      interval_sec: 60
+    ping-check:
+      protocol: icmp
+      timeout_sec: 5
+      interval_sec: 30
+  web2:
+    hostname: web2.mydomain.net
+    ping-check:
+      protocol: icmp
+      timeout_sec: 5
+      interval_sec: 10

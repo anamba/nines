@@ -1,0 +1,13 @@
+nines
+Last modified 2012-03-25
+Copyright (c) 2012 Aaron Namba <aaron@biggerbird.com>
+
+Distributed under MIT license.
+
+Dependencies:
+ - net-ping, ~>1.5
+ - net-dns, 0.6.1
+
+Nines is a simple server monitoring tool written in Ruby. It reads in hand-coded YAML config files (see config.yml.sample).
+
+When run, it forks into the background and runs in a continuous loop until killed. If there are bugs in the code (likely) it may die, so keep tabs on it using monit or similar.
