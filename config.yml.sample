@@ -2,6 +2,9 @@
 logfile: nines.log
 pidfile: nines.pid
 
+# if debug = true, each check will run just once (instead of continuously)
+debug: false
+
 contacts:
   admin-standard:
     email: admin@example.com
