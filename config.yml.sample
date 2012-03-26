@@ -26,6 +26,10 @@ hosts:
       port: 80
       timeout_sec: 5
       interval_sec: 60
+    http-check2:
+      port: 8080
+      timeout_sec: 5
+      interval_sec: 60
     ping-check:
       protocol: icmp
       timeout_sec: 5
@@ -33,6 +37,7 @@ hosts:
   web2:
     hostname: web2.mydomain.net
     ping-check:
-      protocol: icmp
+      protocol: tcp
+      port: 22
       timeout_sec: 5
       interval_sec: 10

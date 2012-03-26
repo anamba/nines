@@ -8,9 +8,10 @@ require 'net/ping'
 @@config = YAML.load(File.read('config.yml'))
 @@logfile = @@config['logfile'] || 'nines.log'
 @@pidfile = @@config['pidfile'] || 'nines.pid'
-@@continue = true
 @@debug = @@config['debug']
+@@user_agent = "nines/1.0"
 
+@@continue = true
 trap("INT") { @@continue = false ; puts "Caught SIGINT, will exit after current checks complete or time out." }
 trap("TERM") { @@continue = false ; puts "Caught SIGTERM, will exit after current checks complete or time out." }
 
@@ -68,18 +69,19 @@ threads = []
   hostname = options['hostname']
   address = Dnsruby::Resolv.getaddress(options['hostname'])
   
-  options.each do |opt, val|
-    case opt
-    when 'http-check'
+  options.each do |name, check|
+    case name
+    when /http-check/
       threads << Thread.new(Thread.current) { |parent|
         begin
-          timeout = options['http-check']['timeout_sec'] || 5
-          port = options['http-check']['port'] || 80
-          interval = options['http-check']['interval_sec'] || 5
-          uri = options['http-check']['uri'] || "http://#{hostname}:#{port}/"
+          timeout = check['timeout_sec'] || 5
+          port = check['port'] || 80
+          interval = check['interval_sec'] || 5
+          uri = check['uri'] || "http://#{hostname}:#{port}/"
           
           while @@continue do
             pinger = Net::Ping::HTTP.new(uri, port, timeout)
+            pinger.user_agent = @@user_agent
             if pinger.ping?
               logger.puts "[#{host}] Check passed: #{uri} (#{address}), timeout #{timeout}#{pinger.warning ? " [warning: #{pinger.warning}]" : ''}"
             else
@@ -103,12 +105,12 @@ threads = []
         end
       }
     
-    when 'ping-check'
+    when /ping-check/
       threads << Thread.new(Thread.current) { |parent|
-        timeout = options['ping-check']['timeout_sec'] || 5
-        port = options['ping-check']['port'] || '0'
-        interval = options['http-check']['interval_sec'] || 5
-        protocol = options['ping-check']['protocol'].downcase || 'icmp'
+        timeout = check['timeout_sec'] || 5
+        port = check['port']
+        interval = check['interval_sec'] || 5
+        protocol = check['protocol'].downcase || 'icmp'
         
         while @@continue do
           pinger = case protocol
@@ -122,11 +124,11 @@ threads = []
               end
             else "invalid ping protocol #{protocol}"
           end
-        
+          
           if pinger.ping?
             logger.puts "[#{host}] Check passed: #{protocol == 'icmp' ? 'icmp' : "#{protocol}/#{port}"} ping on #{hostname} (#{address}), timeout #{timeout}"
           else
-            logger.puts "[#{host}] Check FAILED: #{protocol == 'icmp' ? 'icmp' : "#{protocol}/#{port}"} ping on #{hostname} (#{address}), timeout #{timeout}"
+            logger.puts "[#{host}] Check FAILED: #{port ? "#{protocol}/#{port}" : protocol} ping on #{hostname} (#{address}), timeout #{timeout}"
             # do some notification stuff
           end
           
