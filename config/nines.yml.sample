@@ -41,3 +41,11 @@ hosts:
       port: 22
       timeout_sec: 5
       interval_sec: 10
+
+smtp:
+  address: smtp.sendgrid.net
+  port: 587
+  user_name: asdf
+  password: fdsa
+  authentication: plain
+  enable_starttls_auto: true
