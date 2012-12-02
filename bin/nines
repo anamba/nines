@@ -1,0 +1,68 @@
+#!/usr/bin/env ruby
+
+require 'yaml'
+require 'trollop'
+require 'nines'
+
+Nines::App.continue = true
+trap("INT") { Nines::App.continue = false ; puts "Caught SIGINT, will exit after current checks complete or time out." }
+trap("TERM") { Nines::App.continue = false ; puts "Caught SIGTERM, will exit after current checks complete or time out." }
+
+opts = Trollop::options do
+  version "nines 1.0.0 (c) Aaron Namba"
+  banner "Note: Command line parameters override config file values."
+  
+  opt 'config-file', "Path to YAML configuration file", :short => '-f', :default => 'config/nines.yml'
+  opt 'verbose', :type => :boolean
+  opt 'debug', :type => :boolean
+  
+  stop_on [ 'start', 'stop' ]
+end
+
+# absolutize config file path
+opts['config-file'] = opts['config-file'] =~ /^\// ? opts['config-file'] : File.dirname(__FILE__) + '/../' + opts['config-file']
+
+unless File.exists?(opts['config-file'])
+  puts "Config file not found (or not accessible)"
+  exit 1
+end
+
+# instantiate Nines::App using config file
+app = Nines::App.new(File.expand_path(opts['config-file']))
+app.debug ||= opts['debug']
+app.verbose ||= opts['verbose']
+
+unless opts['debug']
+  unless app.logfile_writable 
+    puts "Couldn't open #{app.logfile} for logging"
+    exit 1
+  end
+  unless app.pidfile_writable
+    puts "Couldn't write pid to #{app.pidfile}"
+    exit 1
+  end
+end
+
+unless app.check_hostnames
+  puts "Invalid hostnames found in config file"
+  exit 1
+end
+
+# process subcommands
+cmd = ARGV.shift
+case cmd
+when 'start'
+  cmd_opts = Trollop.options do
+  end
+  
+  app.start(cmd_opts)
+
+when 'stop'
+  cmd_opts = Trollop.options do
+  end
+  
+  app.stop(cmd_opts)
+
+else
+  app.start
+end

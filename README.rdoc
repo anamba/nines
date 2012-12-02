@@ -1,0 +1,23 @@
+=nines
+
+Nines is a simple server monitoring tool written in Ruby. It reads in hand-coded YAML config files (see config.yml.sample). Rename to config.yml and edit as needed before first run.
+
+When run, it forks into the background and runs in a continuous loop. If there are bugs in the code (likely) it may die, so keep it running with monit, init, etc.
+
+=Usage
+
+git clone git://github.com/anamba/nines.git && cd nines && bundle install && bundle exec ./nines
+To stop: bundle exec ./nines stop
+
+=Dependencies
+
+Developed and tested with MRI ruby 1.9.3.
+
+Dependencies:
+* bundler
+* net-ping
+* dnsruby
+
+=License & Copyright
+
+Distributed under MIT license. Copyright (c) 2012 Aaron Namba <aaron@biggerbird.com>
