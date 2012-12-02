@@ -15,10 +15,10 @@ opts = Trollop::options do
 end
 
 # absolutize config file path
-opts['config-file'] = opts['config-file'] =~ /^\// ? opts['config-file'] : File.dirname(__FILE__) + '/../' + opts['config-file']
+opts['config-file'] = opts['config-file'] =~ /^\// ? opts['config-file'] : File.expand_path(opts['config-file'], Dir.pwd)
 
 unless File.exists?(opts['config-file'])
-  puts "Config file not found (or not accessible)"
+  puts "Config file #{opts['config-file']} not found (or not accessible)"
   exit 1
 end
 
