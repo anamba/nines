@@ -1,3 +1,4 @@
 config/nines.yml
 log/nines.log
+nines-*.gem
 tmp/nines.pid
