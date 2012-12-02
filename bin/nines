@@ -1,20 +1,15 @@
 #!/usr/bin/env ruby
 
-require 'yaml'
 require 'trollop'
-require 'nines'
-
-Nines::App.continue = true
-trap("INT") { Nines::App.continue = false ; puts "Caught SIGINT, will exit after current checks complete or time out." }
-trap("TERM") { Nines::App.continue = false ; puts "Caught SIGTERM, will exit after current checks complete or time out." }
+require 'nines/version'
 
 opts = Trollop::options do
-  version "nines 1.0.0 (c) Aaron Namba"
-  banner "Note: Command line parameters override config file values."
+  version "nines #{Nines::VERSION} (c) Aaron Namba"
+  banner "nines #{Nines::VERSION} (c) Aaron Namba\nNote: Command line parameters override config file values."
   
   opt 'config-file', "Path to YAML configuration file", :short => '-f', :default => 'config/nines.yml'
-  opt 'verbose', :type => :boolean
-  opt 'debug', :type => :boolean
+  opt 'verbose', "Enable detailed logging", :type => :boolean
+  opt 'debug', "Run each check once, then exit", :type => :boolean
   
   stop_on [ 'start', 'stop' ]
 end
@@ -26,6 +21,9 @@ unless File.exists?(opts['config-file'])
   puts "Config file not found (or not accessible)"
   exit 1
 end
+
+# args seem okay, load up the app
+require 'nines'
 
 # instantiate Nines::App using config file
 app = Nines::App.new(File.expand_path(opts['config-file']))

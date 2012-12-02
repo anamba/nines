@@ -1,7 +1,9 @@
+require "nines/version"
+
 Gem::Specification.new do |s|
   s.platform    = Gem::Platform::RUBY
   s.name        = 'nines'
-  s.version     = '1.0.0'
+  s.version     = Nines::VERSION
   s.summary     = 'Simple server monitoring tool written in pure Ruby.'
   s.description = 'Nines is a simple server monitoring tool written in Ruby.'
 
@@ -12,7 +14,7 @@ Gem::Specification.new do |s|
 
   s.author      = "Aaron Namba"
   s.email       = "aaron@biggerbird.com"
-  # s.homepage = 'http://www.rubyonrails.org'
+  s.homepage    = "https://github.com/anamba/nines"
 
   s.bindir      = 'bin'
   s.files         = `git ls-files`.split("\n")

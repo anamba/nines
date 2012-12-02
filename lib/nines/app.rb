@@ -77,6 +77,11 @@ module Nines
       # rest of this method runs as background process
       #
       
+      # trap signals before spawning threads
+      Nines::App.continue = true
+      trap("INT") { Nines::App.continue = false ; puts "Caught SIGINT, will exit after current checks complete or time out." }
+      trap("TERM") { Nines::App.continue = false ; puts "Caught SIGTERM, will exit after current checks complete or time out." }
+      
       self.logger = debug ? STDOUT : File.open(logfile, 'a')
       logger.sync = 1
       logger.puts "[#{Time.now}] - nines starting"
