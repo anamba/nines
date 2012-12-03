@@ -1,4 +1,10 @@
-config/nines.yml
+# log and pid files
 log/nines.log
-nines-*.gem
 tmp/nines.pid
+
+# config files
+nines.rb
+nines.yml
+
+# built gem
+nines-*.gem

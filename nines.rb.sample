@@ -1,0 +1,54 @@
+Nines::App.config = {
+  debug: false,
+  verbose: false,
+  
+  logfile: 'log/nines.log',
+  pidfile: 'tmp/nines.pid',
+  
+  contacts: {
+    'admin-standard' => { email: 'admin@example.com' },
+    'admin-urgent' => { email: 'admin@example.com', twitter: 'admin_oncall', sms: '19875551234', phone: '19875554321' }
+  },
+  
+  check_groups: [
+    { name: 'Web Sites - High Priority',
+      description: 'Check often, notify immediately',
+      parameters: { type: :http, port: 80, timeout_sec: 5, interval_sec: 30 },
+      notify: [ { contact: 'admin-urgent', after: 2, every: 2, upto: 100 } ],
+      checks: [ 'www.corporation.com', 'www.clientabc.com' ]
+    },
+    { name: 'Web Sites - Low Priority',
+      description: 'Check infrequently, use urgent contact only after extended downtime',
+      parameters: { type: :http, port: 80, timeout_sec: 15, interval_sec: 300 },
+      notify: [
+        { contact: 'admin-standard', after: 2, every: 2, upto: 10 },
+        { contact: 'admin-urgent', after: 25, every: 10, upto: 10 }
+      ],
+      checks: [
+        'blog.johndoe.name',
+        { name: 'Blog Redirect', hostname: 'www.oldblogsite.com', up_statuses: [ 301 ] }
+      ]
+    },
+    { name: 'Servers',
+      description: 'Simple ping tests',
+      parameters: { type: :ping, protocol: :icmp, interval_sec: 60 },
+      notify: [
+        { contact: 'admin-standard', after: 2, every: 2, upto: 10 },
+        { contact: 'admin-urgent', after: 25, every: 10, upto: 10 }
+      ],
+      checks: [
+        'web1.hostingco.com',
+        { name: 'web1 admin IP', hostname: 'web1.hostingco.net' }
+      ]
+    },
+  ],
+  
+  smtp: {
+    address: 'smtp.sendgrid.net',
+    port: 587,
+    user_name: 'myusername',
+    password: 'mypassword',
+    authentication: 'plain',
+    enable_starttls_auto: true
+  }
+}
