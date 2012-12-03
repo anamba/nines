@@ -6,10 +6,9 @@ When run, it forks into the background and runs in a continuous loop. If there a
 
 =Usage
 
-```gem install 'nines'
+gem install 'nines'
 # create a config file in {YAML}[https://github.com/anamba/nines/blob/master/nines.yml.sample] or {ruby}[https://github.com/anamba/nines/blob/master/nines.rb.sample] format
 nines -f <config file> start
-```
 
 =Dependencies
 
