@@ -6,8 +6,9 @@ When run, it forks into the background and runs in a continuous loop. If there a
 
 =Usage
 
-git clone git://github.com/anamba/nines.git && cd nines && bundle install && bundle exec ./nines
-To stop: bundle exec ./nines stop
+gem install 'nines'
+[ create a config file in YAML or ruby format (see nines.yml.sample and nines.rb.sample) ]
+nines -f <config file> start
 
 =Dependencies
 
