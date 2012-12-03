@@ -7,7 +7,7 @@ opts = Trollop::options do
   version "nines #{Nines::VERSION} (c) Aaron Namba"
   banner "nines #{Nines::VERSION} (c) Aaron Namba\nNote: Command line parameters override config file values."
   
-  opt 'config-file', "Path to YAML configuration file", :short => '-f', :default => 'config/nines.yml'
+  opt 'config-file', "Path to YAML configuration file", :short => '-f', :default => 'nines.yml'
   opt 'verbose', "Enable detailed logging", :type => :boolean
   opt 'debug', "Run each check once, then exit", :type => :boolean
   
