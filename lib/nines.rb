@@ -1,5 +1,6 @@
 require 'nines/app'
 require 'nines/check_group'
+require 'nines/check'
 require 'nines/http_check'
 require 'nines/ping_check'
 require 'nines/logger'
