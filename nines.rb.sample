@@ -5,6 +5,7 @@ Nines::App.config = {
   logfile: 'log/nines.log',
   pidfile: 'tmp/nines.pid',
   email_from: 'Nines Notifier <no-reply@example.com>',
+  email_subject_prefix: '[NINES] ',
   
   contacts: {
     'admin-standard' => { email: 'admin@example.com' },

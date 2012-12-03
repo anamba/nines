@@ -14,7 +14,7 @@ module Nines
       Mail.deliver do
         from      Nines::App.email_from
         to        contact['email']
-        subject   "#{check.name} is #{check.up ? 'UP' : 'DOWN'}"
+        subject   "#{Nines::App.email_subject_prefix}#{check.name} is #{check.up ? 'UP' : 'DOWN'}"
         body      email_body
       end
     end

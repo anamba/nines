@@ -6,7 +6,9 @@ require 'mail'
 module Nines
   class App
     class << self
-      attr_accessor :root, :config, :logfile, :pidfile, :email_from, :debug, :verbose, :continue, :state, :state_mutex, :logger, :notifier
+      attr_accessor :root, :config, :continue,
+                    :debug, :verbose, :logfile, :pidfile, :logger, :notifier,
+                    :email_from, :email_subject_prefix
     end
     
     def initialize(config_file)
@@ -26,6 +28,7 @@ module Nines
       self.class.logfile    = config['logfile'] || 'nines.log'
       self.class.pidfile    = config['pidfile'] || 'nines.pid'
       self.class.email_from = config['email_from'] || 'Nines Notifier <no-reply@example.com>'
+      self.class.email_subject_prefix = config['email_subject_prefix'] || ''
       
       # set up logger
       self.class.logger = Logger.new(debug ? STDOUT : File.open(logfile, 'a'))
