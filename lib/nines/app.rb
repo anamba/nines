@@ -1,22 +1,44 @@
+require 'yaml'
+require 'erb'
 require 'net/ping'
 require 'dnsruby'
 
 module Nines
   class App
     class << self
-      attr_accessor :continue
+      attr_accessor :config, :logfile, :pidfile, :debug, :verbose, :continue, :state, :state_mutex, :logger, :notifier
     end
-    
-    attr_accessor :config, :logfile, :pidfile, :debug, :verbose, :user_agent, :logger
     
     def initialize(config_file)
-      @config = YAML.load(File.read(config_file))
-      @logfile = config['logfile'] || 'nines.log'
-      @pidfile = config['pidfile'] || 'nines.pid'
-      @debug = config['debug']
-      @verbose = config['verbose']
-      @user_agent = config['user_agent'] || "nines/1.0"
+      case File.extname(config_file)
+        when '.yml' then self.class.config = YAML.load(ERB.new(File.read(config_file)).result)
+        when '.rb'  then require config_file
+      end
+      self.class.config = stringify_keys_and_symbols(self.class.config)
+      
+      if !config['check_groups'].is_a?(Array) || config['check_groups'].empty?
+        raise Exception.new("No check groups configured, nothing to do.")
+      end
+      
+      @check_groups = []
+      config['check_groups'].each do |options|
+        @check_groups << CheckGroup.new(options)
+      end
+      
+      self.class.logfile = config['logfile'] || 'nines.log'
+      self.class.pidfile = config['pidfile'] || 'nines.pid'
+      self.class.debug   = config['debug']
+      self.class.verbose = config['verbose']
     end
+    
+    # shortcuts
+    def config    ; self.class.config   ; end
+    def logfile   ; self.class.logfile  ; end
+    def pidfile   ; self.class.pidfile  ; end
+    def debug     ; self.class.debug    ; end
+    def verbose   ; self.class.verbose  ; end
+    def logger    ; self.class.logger   ; end
+    def notifier  ; self.class.notifier ; end
     
     def logfile_writable
       begin
@@ -38,13 +60,16 @@ module Nines
       end
     end
     
+    # make sure you're not using OpenDNS or something else that resolves invalid names
     def check_hostnames
       all_good = true
       
-      config['hosts'].each do |host, options|
-        unless options['hostname'] && Dnsruby::Resolv.getaddress(options['hostname'])
-          puts "Error: host #{host} has invalid hostname '#{options['hostname']}'"
-          all_good = false
+      @check_groups.each do |group|
+        group.checks.each do |check|
+          unless check.hostname && Dnsruby::Resolv.getaddress(check.hostname)
+            puts "Error: check #{check.name} has invalid hostname '#{check.hostname}'"
+            all_good = false
+          end
         end
       end
       
@@ -64,6 +89,20 @@ module Nines
       end
     end
     
+    def stringify_keys_and_symbols(obj)
+      case obj.class.to_s
+      when 'Array'
+        obj.map! { |el| stringify_keys_and_symbols(el) }
+      when 'Hash'
+        obj.stringify_keys!
+        obj.each { |k,v| obj[k] = stringify_keys_and_symbols(v) }
+      when 'Symbol'
+        obj = obj.to_s
+      end
+      
+      obj
+    end
+    
     def start(options = {})
       # fork and detach
       if pid = fork
@@ -78,54 +117,30 @@ module Nines
       #
       
       # trap signals before spawning threads
-      Nines::App.continue = true
+      self.class.continue = true
       trap("INT") { Nines::App.continue = false ; puts "Caught SIGINT, will exit after current checks complete or time out." }
       trap("TERM") { Nines::App.continue = false ; puts "Caught SIGTERM, will exit after current checks complete or time out." }
       
-      self.logger = debug ? STDOUT : File.open(logfile, 'a')
+      self.class.logger = Logger.new(debug ? STDOUT : File.open(logfile, 'a'))
       logger.sync = 1
       logger.puts "[#{Time.now}] - nines starting"
       
-      # iterate through config
-      threads = []
-      config['hosts'].each do |host, options|
-        logger.puts "[#{Time.now}] - #{host} - Starting up checks"
-        hostname = options.delete('hostname')
-        
-        options.each do |name, check_opts|
-          case name
-          when /http-check/
-            check_opts['debug'] = debug
-            check_opts['host'] = host
-            check_opts['user_agent'] = user_agent
-            threads << Thread.new(Thread.current) { |parent|
-              begin
-                check = HttpCheck.new(hostname, check_opts)
-                check.run(logger)
-              rescue Exception => e
-                parent.raise e
-              end
-            }
-            
-          when /ping-check/
-            check_opts['debug'] = debug
-            check_opts['host'] = host
-            threads << Thread.new(Thread.current) { |parent|
-              begin
-                check = PingCheck.new(hostname, check_opts)
-                check.run(logger)
-              rescue Exception => e
-                parent.raise e
-              end
-            }
-          
-          else
-            logger.puts "Unknown scan type or option found: #{name}"
-          end
+      # iterate through config, spawning check threads as we go
+      @threads = []
+      
+      @check_groups.each do |group|
+        group.checks.each do |check|
+          @threads << Thread.new(Thread.current) { |parent|
+            begin
+              check.run
+            rescue Exception => e
+              parent.raise e
+            end
+          }
         end
       end
       
-      threads.each { |t| t.join if t.alive? }
+      @threads.each { |t| t.join if t.alive? }
       
       logger.puts "[#{Time.now}] - nines finished"
       logger.close unless debug
@@ -134,13 +149,8 @@ module Nines
     end
     
     def stop(options = {})
-      begin
-        pid = File.read(@pidfile).to_i
-        Process.kill "INT", pid
-      rescue Exception => e
-        puts "Could not stop background process: #{e}"
-        exit 1
-      end
+      pid = File.read(self.class.pidfile).to_i
+      Process.kill "INT", pid
       exit 0
     end
     

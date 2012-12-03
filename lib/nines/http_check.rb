@@ -1,33 +1,42 @@
 module Nines
   class HttpCheck
-    attr_accessor :host, :hostname, :debug, :timeout, :port, :interval, :uri, :ok_statuses, :user_agent
+    attr_accessor :group, :name, :hostname, :timeout, :port, :interval, :uri, :up_statuses, :user_agent, :logger, :notifier
     
-    def initialize(hostname, options)
-      @hostname = hostname
-      @host = options['host'] || hostname
-      @debug = options['debug']
-      @timeout = options['timeout_sec'] || 5
+    def initialize(group, options)
+      @group = group
+      @hostname = options['hostname']
+      @name = options['name'] || @hostname
+      @timeout = options['timeout_sec'] || 10
       @port = options['port'] || 80
-      @interval = options['interval_sec'] || 5
+      @interval = options['interval_sec'] || 60
       @uri = options['uri'] || "http://#{hostname}:#{port}/"
-      @ok_statuses = options['ok_statuses'] || [ 200 ]
+      @up_statuses = options['up_statuses'] || [ 200 ]
       @user_agent = options['user_agent'] || "nines/1.0"
+      @logger = Nines::App.logger || STDOUT
+      @notifier = Nines::App.notifier
+      @times_notified = {}
     end
     
-    def run(logger = STDOUT, notifier = nil)
+    # shortcuts
+    def debug     ; Nines::App.debug    ; end
+    
+    def run
       while Nines::App.continue do
         address = Dnsruby::Resolv.getaddress(hostname)
         
         pinger = Net::Ping::HTTP.new(uri, port, timeout)
         pinger.user_agent = user_agent
         if pinger.ping?
-          logger.puts "[#{Time.now}] - #{host} - Check passed: #{uri} (#{address}), timeout #{timeout}#{pinger.warning ? " [warning: #{pinger.warning}]" : ''}"
+          logger.puts "[#{Time.now}] - #{name} - Check passed: #{uri} (#{address})#{pinger.warning ? " [warning: #{pinger.warning}]" : ''}"
         else
-          logger.puts "[#{Time.now}] - #{host} - Check FAILED: #{uri} (#{address}), timeout #{timeout} [reason: #{pinger.exception}]"
+          logger.puts "[#{Time.now}] - #{name} - Check FAILED: #{uri} (#{address}), timeout #{timeout} [reason: #{pinger.exception}]"
           
-          # do some notification stuff
-          if notifier
-            
+          if notifier && to_notify = group.contacts_to_notify(@times_notified)
+            to_notify.each do |contact_name|
+              notifier.notify!(contact_name)
+              @times_notified[contact_name] ||= 0
+              @times_notified[contact_name] += 1
+            end
           end
         end
         

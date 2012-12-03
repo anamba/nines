@@ -1,18 +1,24 @@
 module Nines
   class PingCheck
-    attr_accessor :host, :hostname, :debug, :timeout, :port, :interval, :protocol
+    attr_accessor :group, :name, :hostname, :timeout, :port, :interval, :protocol, :logger, :notifier
     
-    def initialize(hostname, options)
-      @hostname = hostname
-      @host = options['host'] || hostname
-      @debug = options['debug']
-      @timeout = options['timeout_sec'] || 5
+    def initialize(group, options)
+      @group = group
+      @hostname = options['hostname']
+      @name = options['name'] || @hostname
+      @timeout = options['timeout_sec'] || 10
       @port = options['port']
-      @interval = options['interval_sec'] || 5
+      @interval = options['interval_sec'] || 60
       @protocol = (options['protocol'] || 'icmp').downcase
+      @logger = Nines::App.logger || STDOUT
+      @notifier = Nines::App.notifier
+      @times_notified = {}
     end
     
-    def run(logger = STDOUT, notifier = nil)
+    # shortcuts
+    def debug     ; Nines::App.debug    ; end
+    
+    def run
       while Nines::App.continue do
         address = Dnsruby::Resolv.getaddress(hostname)
         
@@ -29,13 +35,16 @@ module Nines
         end
         
         if pinger.ping?
-          logger.puts "[#{Time.now}] - #{host} - Check passed: #{protocol == 'icmp' ? 'icmp' : "#{protocol}/#{port}"} ping on #{hostname} (#{address}), timeout #{timeout}"
+          logger.puts "[#{Time.now}] - #{name} - Check passed: #{protocol == 'icmp' ? 'icmp' : "#{protocol}/#{port}"} ping on #{hostname} (#{address})"
         else
-          logger.puts "[#{Time.now}] - #{host} - Check FAILED: #{port ? "#{protocol}/#{port}" : protocol} ping on #{hostname} (#{address}), timeout #{timeout}"
+          logger.puts "[#{Time.now}] - #{name} - Check FAILED: #{port ? "#{protocol}/#{port}" : protocol} ping on #{hostname} (#{address}), timeout #{timeout}"
           
-          # do some notification stuff
-          if notifier
-            
+          if notifier && to_notify = group.contacts_to_notify(@times_notified)
+            to_notify.each do |contact_name|
+              notifier.notify!(contact_name)
+              @times_notified[contact_name] ||= 0
+              @times_notified[contact_name] += 1
+            end
           end
         end
         
