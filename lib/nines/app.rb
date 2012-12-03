@@ -1,21 +1,41 @@
 require 'yaml'
 require 'erb'
-require 'net/ping'
 require 'dnsruby'
+require 'mail'
 
 module Nines
   class App
     class << self
-      attr_accessor :config, :logfile, :pidfile, :debug, :verbose, :continue, :state, :state_mutex, :logger, :notifier
+      attr_accessor :root, :config, :logfile, :pidfile, :email_from, :debug, :verbose, :continue, :state, :state_mutex, :logger, :notifier
     end
     
     def initialize(config_file)
+      self.class.root = File.expand_path('../../../', __FILE__)
+      
+      # load config files
       case File.extname(config_file)
         when '.yml' then self.class.config = YAML.load(ERB.new(File.read(config_file)).result)
         when '.rb'  then require config_file
       end
       self.class.config = stringify_keys_and_symbols(self.class.config)
       
+      # set main parameters
+      self.class.debug      = config['debug']
+      self.class.verbose    = config['verbose']
+      
+      self.class.logfile    = config['logfile'] || 'nines.log'
+      self.class.pidfile    = config['pidfile'] || 'nines.pid'
+      self.class.email_from = config['email_from'] || 'Nines Notifier <no-reply@example.com>'
+      
+      # set up logger
+      self.class.logger = Logger.new(debug ? STDOUT : File.open(logfile, 'a'))
+      logger.sync = 1  # makes it possible to tail the logfile
+      
+      # set up notifier
+      configure_smtp
+      self.class.notifier = Notifier.new(config['contacts'])
+      
+      # set up check_groups (uses logger and notifier)
       if !config['check_groups'].is_a?(Array) || config['check_groups'].empty?
         raise Exception.new("No check groups configured, nothing to do.")
       end
@@ -24,11 +44,6 @@ module Nines
       config['check_groups'].each do |options|
         @check_groups << CheckGroup.new(options)
       end
-      
-      self.class.logfile = config['logfile'] || 'nines.log'
-      self.class.pidfile = config['pidfile'] || 'nines.pid'
-      self.class.debug   = config['debug']
-      self.class.verbose = config['verbose']
     end
     
     # shortcuts
@@ -36,9 +51,7 @@ module Nines
     def logfile   ; self.class.logfile  ; end
     def pidfile   ; self.class.pidfile  ; end
     def debug     ; self.class.debug    ; end
-    def verbose   ; self.class.verbose  ; end
     def logger    ; self.class.logger   ; end
-    def notifier  ; self.class.notifier ; end
     
     def logfile_writable
       begin
@@ -76,16 +89,20 @@ module Nines
       all_good
     end
     
-    def configure_action_mailer
+    def configure_smtp
       if config['smtp'].is_a?(Hash)
-        ActionMailer::Base.smtp_settings = {
-          :address => config['smtp']['address'] || 'localhost',
-          :port => config['smtp']['port'],
-          :user_name => config['smtp']['user_name'],
-          :password => config['smtp']['password'],
-          :authentication => (config['smtp']['authentication'] || 'plain').to_sym,
-          :enable_starttls_auto => config['smtp']['enable_starttls_auto'] || false,
-        }
+        Mail.defaults do
+          delivery_method :smtp, { 
+            :address => Nines::App.config['smtp']['address'] || 'localhost',
+            :port => Nines::App.config['smtp']['port'] || 25,
+            :domain => Nines::App.config['smtp']['domain'],
+            :user_name => Nines::App.config['smtp']['user_name'],
+            :password => Nines::App.config['smtp']['password'],
+            :authentication => (Nines::App.config['smtp']['authentication'] || 'plain').to_sym,
+            :enable_starttls_auto => Nines::App.config['smtp']['enable_starttls_auto'],
+            :tls => Nines::App.config['smtp']['tls'],
+          }
+        end
       end
     end
     
@@ -104,6 +121,8 @@ module Nines
     end
     
     def start(options = {})
+      logger.puts "[#{Time.now}] - nines starting"
+      
       # fork and detach
       if pid = fork
         File.open(pidfile, 'w') { |f| f.print pid }
@@ -120,10 +139,6 @@ module Nines
       self.class.continue = true
       trap("INT") { Nines::App.continue = false ; puts "Caught SIGINT, will exit after current checks complete or time out." }
       trap("TERM") { Nines::App.continue = false ; puts "Caught SIGTERM, will exit after current checks complete or time out." }
-      
-      self.class.logger = Logger.new(debug ? STDOUT : File.open(logfile, 'a'))
-      logger.sync = 1
-      logger.puts "[#{Time.now}] - nines starting"
       
       # iterate through config, spawning check threads as we go
       @threads = []
@@ -143,15 +158,26 @@ module Nines
       @threads.each { |t| t.join if t.alive? }
       
       logger.puts "[#{Time.now}] - nines finished"
-      logger.close unless debug
+      logger.close
       
       puts "Background process finished"
     end
     
     def stop(options = {})
-      pid = File.read(self.class.pidfile).to_i
-      Process.kill "INT", pid
-      exit 0
+      begin
+        pid = File.read(self.class.pidfile).to_i
+      rescue Errno::ENOENT => e
+        STDERR.puts "Couldn't open pid file #{self.class.pidfile}, please check your config."
+        exit 1
+      end
+      
+      begin
+        Process.kill "INT", pid
+        exit 0
+      rescue Errno::ESRCH => e
+        STDERR.puts "Couldn't kill process with pid #{pid}. Are you sure it's running?"
+        exit 1
+      end
     end
     
   end
