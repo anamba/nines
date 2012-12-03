@@ -29,24 +29,6 @@ module Nines
       self.class.pidfile    = config['pidfile'] || 'nines.pid'
       self.class.email_from = config['email_from'] || 'Nines Notifier <no-reply@example.com>'
       self.class.email_subject_prefix = config['email_subject_prefix'] || ''
-      
-      # set up logger
-      self.class.logger = Logger.new(debug ? STDOUT : File.open(logfile, 'a'))
-      logger.sync = 1  # makes it possible to tail the logfile
-      
-      # set up notifier
-      configure_smtp
-      self.class.notifier = Notifier.new(config['contacts'])
-      
-      # set up check_groups (uses logger and notifier)
-      if !config['check_groups'].is_a?(Array) || config['check_groups'].empty?
-        raise Exception.new("No check groups configured, nothing to do.")
-      end
-      
-      @check_groups = []
-      config['check_groups'].each do |options|
-        @check_groups << CheckGroup.new(options)
-      end
     end
     
     # shortcuts
@@ -124,7 +106,32 @@ module Nines
     end
     
     def start(options = {})
+      # set up logger
+      self.class.logger = Logger.new(debug ? STDOUT : File.open(logfile, 'a'))
+      logger.sync = 1  # makes it possible to tail the logfile
+      
+      # use it
       logger.puts "[#{Time.now}] - nines starting"
+      
+      # set up notifier
+      configure_smtp
+      self.class.notifier = Notifier.new(config['contacts'])
+      
+      # set up check_groups (uses logger and notifier)
+      if !config['check_groups'].is_a?(Array) || config['check_groups'].empty?
+        raise Exception.new("No check groups configured, nothing to do.")
+      end
+      
+      @check_groups = []
+      config['check_groups'].each do |options|
+        @check_groups << CheckGroup.new(options)
+      end
+      
+      # TODO: this is a little awkwardly placed, but can fix later
+      unless check_hostnames
+        puts "Invalid hostnames found in config file"
+        exit 1
+      end
       
       # fork and detach
       if pid = fork

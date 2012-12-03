@@ -41,11 +41,6 @@ unless Nines::App.debug
   end
 end
 
-unless app.check_hostnames
-  puts "Invalid hostnames found in config file"
-  exit 1
-end
-
 # process subcommands
 cmd = ARGV.shift
 case cmd
