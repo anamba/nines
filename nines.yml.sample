@@ -1,8 +1,11 @@
 ---
 debug: false
 verbose: false
+
 logfile: log/nines.log
 pidfile: tmp/nines.pid
+email_from: 'Nines Notifier <no-reply@calchost.com>'
+
 contacts:
   admin-standard:
     email: admin@example.com
@@ -11,6 +14,7 @@ contacts:
     twitter: admin_oncall
     sms: '19875551234'
     phone: '19875554321'
+
 check_groups:
 - name: Web Sites - High Priority
   description: Check often, notify immediately
@@ -68,6 +72,7 @@ check_groups:
   - web1.hostingco.com
   - name: web1 admin IP
     hostname: web1.hostingco.net
+
 smtp:
   address: smtp.sendgrid.net
   port: 587
