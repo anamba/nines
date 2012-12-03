@@ -25,7 +25,6 @@ Gem::Specification.new do |s|
 
   s.add_dependency 'net-ping',     '~> 1.5.3'
   s.add_dependency 'dnsruby',      '~> 1.53'
-  s.add_dependency 'actionmailer', '~> 3.0'
-  s.add_dependency 'inline-style', '~> 0.5.0'
-  s.add_dependency 'trollop'
+  s.add_dependency 'mail',         '~> 2.4'
+  s.add_dependency 'trollop',      '~> 2.0'
 end

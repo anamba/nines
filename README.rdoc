@@ -14,9 +14,10 @@ To stop: bundle exec ./nines stop
 Developed and tested with MRI ruby 1.9.3.
 
 Dependencies:
-* bundler
-* net-ping
-* dnsruby
+* trollop (commandline options)
+* net-ping (http/ping testing)
+* dnsruby (dns resolution)
+* mail (email)
 
 =License & Copyright
 
