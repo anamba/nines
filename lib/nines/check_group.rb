@@ -1,6 +1,6 @@
 module Nines
   class CheckGroup
-    attr_accessor :checks
+    attr_accessor :contacts, :checks
     
     def initialize(options = {})
       options.stringify_keys!
@@ -41,15 +41,17 @@ module Nines
     
     # times_notified must be a hash with contact names as keys
     def contacts_to_notify(cycles, times_notified)
+      # cycles starts at 0, but user generally expects first down event to be cycle 1
+      
       to_notify = []
       @contacts.each do |contact|
         next if times_notified[contact['name']].to_i >= contact['upto']
-        next if cycles < contact['after']
-        next if cycles - contact['after'] % contact['every'] != 0
-        to_notify << contact.name
+        next if (cycles+1) < contact['after']
+        next if (cycles+1 - contact['after']) % contact['every'] != 0
+        to_notify << contact['name']
       end
       
-      return to_notify
+      to_notify
     end
     
   end

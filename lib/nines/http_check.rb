@@ -1,20 +1,16 @@
+require 'net/ping'
+require 'dnsruby'
+
 module Nines
-  class HttpCheck
-    attr_accessor :group, :name, :hostname, :timeout, :port, :interval, :uri, :up_statuses, :user_agent, :logger, :notifier
+  class HttpCheck < Check
+    attr_accessor :uri, :up_statuses, :user_agent
     
     def initialize(group, options)
-      @group = group
-      @hostname = options['hostname']
-      @name = options['name'] || @hostname
-      @timeout = options['timeout_sec'] || 10
-      @port = options['port'] || 80
-      @interval = options['interval_sec'] || 60
+      super(group, options)
+      
       @uri = options['uri'] || "http://#{hostname}:#{port}/"
       @up_statuses = options['up_statuses'] || [ 200 ]
       @user_agent = options['user_agent'] || "nines/1.0"
-      @logger = Nines::App.logger || STDOUT
-      @notifier = Nines::App.notifier
-      @times_notified = {}
     end
     
     # shortcuts
@@ -22,29 +18,18 @@ module Nines
     
     def run
       while Nines::App.continue do
-        address = Dnsruby::Resolv.getaddress(hostname)
+        check_started = Time.now
+        @address = Dnsruby::Resolv.getaddress(hostname)
         
-        pinger = Net::Ping::HTTP.new(uri, port, timeout)
-        pinger.user_agent = user_agent
-        if pinger.ping?
-          logger.puts "[#{Time.now}] - #{name} - Check passed: #{uri} (#{address})#{pinger.warning ? " [warning: #{pinger.warning}]" : ''}"
-        else
-          logger.puts "[#{Time.now}] - #{name} - Check FAILED: #{uri} (#{address}), timeout #{timeout} [reason: #{pinger.exception}]"
-          
-          if notifier && to_notify = group.contacts_to_notify(@times_notified)
-            to_notify.each do |contact_name|
-              notifier.notify!(contact_name)
-              @times_notified[contact_name] ||= 0
-              @times_notified[contact_name] += 1
-            end
-          end
-        end
+        @pinger = Net::Ping::HTTP.new(uri, port, timeout)
+        @pinger.user_agent = user_agent
         
-        # TODO: log result
+        # the check
+        log_status(@pinger.ping?, "#{uri} (#{address})#{@pinger.warning ? " [warning: #{@pinger.warning}]" : ''}")
         
         break if debug
         
-        wait = interval.to_f - (pinger.duration || 0)
+        wait = interval.to_f - (Time.now - check_started)
         while wait > 0 do
           break unless Nines::App.continue
           sleep [1, wait].min
