@@ -4,7 +4,6 @@ require 'nines/http_check'
 require 'nines/ping_check'
 require 'nines/logger'
 require 'nines/notifier'
-require 'nines/mailer'
 require 'nines/version'
 
 # borrowed from activesupport
