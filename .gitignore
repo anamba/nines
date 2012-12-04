@@ -1,6 +1,6 @@
 # log and pid files
-log/nines.log
-tmp/nines.pid
+nines.log
+nines.pid
 
 # config files
 nines.rb
