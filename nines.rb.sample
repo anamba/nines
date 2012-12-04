@@ -2,8 +2,8 @@ Nines::App.config = {
   debug: false,
   verbose: false,
   
-  logfile: 'log/nines.log',
-  pidfile: 'tmp/nines.pid',
+  logfile: './nines.log',
+  pidfile: './nines.pid',
   email_from: 'Nines Notifier <no-reply@example.com>',
   email_subject_prefix: '[NINES] ',
   
