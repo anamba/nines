@@ -11,11 +11,10 @@ Gem::Specification.new do |s|
   s.required_ruby_version     = '>= 1.9.3'
   s.required_rubygems_version = '>= 1.8.11'
 
-  s.license = 'MIT'
-
   s.author      = "Aaron Namba"
   s.email       = "aaron@biggerbird.com"
   s.homepage    = "https://github.com/anamba/nines"
+  s.license     = 'MIT'
 
   s.bindir      = 'bin'
   s.files         = `git ls-files`.split("\n")
