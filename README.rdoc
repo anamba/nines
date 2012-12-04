@@ -13,14 +13,14 @@ It's no substitute for paid services like Pingdom, but it's great for keeping ta
 
 The config file can be in YAML or ruby format. Refer to the included examples: {nines.yml.sample}[https://github.com/anamba/nines/blob/master/nines.yml.sample] |  {nines.rb.sample}[https://github.com/anamba/nines/blob/master/nines.rb.sample]
 
-What if you have only one server, and you want to monitor it? You do need to have a server to run nines on, and you don't want to have your one server monitoring itself. If you have a shared hosting account that allows shell access, you can run nines there. Many hosts offer an ancient version of ruby, but you can work around that with {rvm}[https://rvm.io/rvm/install/]. Here's how (tested on {Dreamhost}[http://dreamhost.com/]:
- 
- % \curl -L https://get.rvm.io | bash -s stable --ruby  # installs rvm and stable version of ruby (currently 1.9.3p327)
- % echo 'gem: --no-ri --no-rdoc' > ~/.gemrc              # gems install more quickly sans documentation
+What if you have only one server, and you want to monitor it? You do need to have a server to run nines on, and you don't want to have your one server monitoring itself. If you have a shared hosting account that allows shell access, you can run nines there. Many hosts have an ancient version of ruby installed, but you can work around that with {rvm}[https://rvm.io/rvm/install/]. Here's how (tested on {Dreamhost}[http://dreamhost.com/]):
+
+ % \curl -L https://get.rvm.io | bash -s stable --ruby  # installs rvm and stable version of ruby
+ % echo 'gem: --no-ri --no-rdoc' > ~/.gemrc             # gems install more quickly sans documentation
  % gem install nines                                    # grab the latest version of the nines gem
  % cd ; mkdir nines && cd nines                         # put nines stuff in its own dir
  % vi nines.yml                                         # create a config file (start with a sample config)
- % nines -d -f nines.yml                                # then test it in debug mode (remove -d once your config is working)
+ % nines -d -f nines.yml                                # test it in debug mode (remove -d once config is working)
 
 Add nines to your crontab to keep it running through errors and server reboots. When using cron+rvm, remember to grab the GEM_HOME and GEM_PATH environment variables from your shell and make sure the rvm version of ruby is in your path.
 
