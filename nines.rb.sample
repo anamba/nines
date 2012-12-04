@@ -2,8 +2,10 @@ Nines::App.config = {
   debug: false,
   verbose: false,
   
+  # these are just examples... you should use absolute paths
   logfile: './nines.log',
   pidfile: './nines.pid',
+  
   email_from: 'Nines Notifier <no-reply@example.com>',
   email_subject_prefix: '[NINES] ',
   
@@ -45,6 +47,7 @@ Nines::App.config = {
     },
   ],
   
+  # delete this section if using local mta (localhost port 25)
   smtp: {
     address: 'smtp.sendgrid.net',
     port: 587,

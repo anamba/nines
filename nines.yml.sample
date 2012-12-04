@@ -2,8 +2,10 @@
 debug: false
 verbose: false
 
+# these are just examples, you should use an absolute path
 logfile: ./nines.log
 pidfile: ./nines.pid
+
 email_from: 'Nines Notifier <no-reply@calchost.com>'
 email_subject_prefix: '[NINES] '
 
@@ -32,6 +34,7 @@ check_groups:
   checks:
   - www.corporation.com
   - www.clientabc.com
+
 - name: Web Sites - Low Priority
   description: Check infrequently, use urgent contact only after extended downtime
   parameters:
@@ -54,6 +57,7 @@ check_groups:
     hostname: www.oldblogsite.com
     up_statuses:
     - 301
+
 - name: Servers
   description: Simple ping tests
   parameters:
@@ -74,6 +78,7 @@ check_groups:
   - name: web1 admin IP
     hostname: web1.hostingco.net
 
+# delete this section if using local mta (localhost port 25)
 smtp:
   address: smtp.sendgrid.net
   port: 587
