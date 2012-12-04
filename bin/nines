@@ -44,7 +44,7 @@ end
 # process subcommands
 cmd = ARGV.shift
 case cmd
-when 'start'
+when 'start', nil
   cmd_opts = Trollop.options do
   end
   
@@ -60,7 +60,4 @@ when 'stop'
   end
   
   app.stop(cmd_opts)
-  
-else
-  app.start
 end
