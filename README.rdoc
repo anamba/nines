@@ -1,19 +1,68 @@
 =nines
 
-Nines is a simple server monitoring tool written in Ruby. It reads in hand-coded YAML config files (see config.yml.sample). Rename to config.yml and edit as needed before first run.
+Nines is a simple server monitoring tool written in Ruby, with versatile yet easy to understand notification preferences.
 
 When run, it forks into the background and runs in a continuous loop. If there are bugs in the code (possible) it may die, so keep it running with monit, init, cron, whatever.
 
 It's no substitute for paid services like Pingdom, but it's great for keeping tabs on less critical services.
 
+=Contacts, Checks & Notifications
+
+Define different contacts to be notified:
+
+  contacts: {
+    'admin-standard' => { email: 'admin@example.com' },
+    'admin-urgent' => { email: 'admin@example.com', twitter: 'admin_oncall', sms: '19875551234', phone: '19875554321' }
+  }
+
+Group checks according to check parameters and notification preferences:
+
+  check_groups: [
+    { name: 'Web Sites - High Priority',
+      description: 'Check often, notify immediately',
+      parameters: { type: :http, port: 80, timeout_sec: 5, interval_sec: 30 },
+      notify: [ { contact: 'admin-urgent', after: 2, every: 2, upto: 100 } ],
+      checks: [ 'www.corporation.com', 'www.clientabc.com' ]
+    },
+    
+    { name: 'Web Sites - Low Priority',
+      description: 'Check infrequently, use urgent contact only after extended downtime',
+      parameters: { type: :http, port: 80, timeout_sec: 15, interval_sec: 60 },
+      notify: [
+        { contact: 'admin-standard', after: 5, every: 5, upto: 10 },
+        { contact: 'admin-urgent', after: 25, every: 10, upto: 10 }
+      ],
+      checks: [
+        'blog.johndoe.name',
+        { name: 'Blog Redirect', hostname: 'www.oldblogsite.com', up_statuses: [ 301 ] }
+      ]
+    },
+    
+    { name: 'Servers',
+      description: 'Simple ping tests',
+      parameters: { type: :ping, protocol: :icmp, interval_sec: 60 },
+      notify: [
+        { contact: 'admin-standard', after: 2, every: 2, upto: 10 },
+        { contact: 'admin-urgent', after: 25, every: 10, upto: 10 }
+      ],
+      checks: [
+        'web1.hostingco.com',
+        { name: 'web1 admin IP', hostname: 'web1.hostingco.net' }
+      ]
+    }
+  ]
+
+Note: nines 1.0 supports email notifications only.
+
 =Usage
 
  % gem install nines
- % nines -f <config file> start
+ % nines -f <config-file> start
+ % nines -f <config-file> stop
 
-The config file can be in YAML or ruby format. Refer to the included examples: {nines.yml.sample}[https://github.com/anamba/nines/blob/master/nines.yml.sample] |  {nines.rb.sample}[https://github.com/anamba/nines/blob/master/nines.rb.sample]
+See the configuration section for more details.
 
-What if you have only one server, and you want to monitor it? You do need to have a server to run nines on, and you don't want to have your one server monitoring itself. If you have a shared hosting account that allows shell access, you can run nines there. Many hosts have an ancient version of ruby installed, but you can work around that with {rvm}[https://rvm.io/rvm/install/]. Here's how (tested on {Dreamhost}[http://dreamhost.com/]):
+What if you have only one server, and you want to monitor it? You do need to have a server to run nines on, and you don't want to have your one server monitoring itself. If you have a shared hosting account that allows shell access, you can run nines there. Many hosts have an ancient version of ruby installed, but you can work around that with {rvm}[https://rvm.io/rvm/install/]. Here's how (tested on {Dreamhost}[http://dreamhost.com/r.cgi?1043337] <= referral link to support author):
 
  % \curl -L https://get.rvm.io | bash -s stable --ruby  # installs rvm and stable version of ruby
  % echo 'gem: --no-ri --no-rdoc' > ~/.gemrc             # gems install more quickly sans documentation
@@ -41,6 +90,27 @@ Example crontab (note the two different bin dirs for rvm):
  */15 * * * * nines -d -f /home/[username]/nines/nines.rb
 
 This will try to (re)start nines every 15 minutes. (If it is running, the command will just exit.)
+
+=Configuration
+
+The config file can be in YAML or ruby format. Refer to the included examples: {nines.yml.sample}[https://github.com/anamba/nines/blob/master/nines.yml.sample] /  {nines.rb.sample}[https://github.com/anamba/nines/blob/master/nines.rb.sample]
+
+The simplest working config for a single web site (Ruby format):
+
+  Nines::App.config = {
+    contacts: {
+      'admin' => { email: 'admin@example.com' },
+    },
+    check_groups: [
+      { name: 'My Web Site',
+        parameters: { type: :http },
+        notify: [ { contact: 'admin' } ],
+        checks: [ 'www.asdf.com' ]
+      }
+    ]
+  }
+
+
 
 =Dependencies
 
