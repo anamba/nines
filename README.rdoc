@@ -60,9 +60,30 @@ Note: nines 1.0 supports email notifications only.
  % nines -f <config-file> start
  % nines -f <config-file> stop
 
-See the configuration section for more details.
+=Configuration
 
-What if you have only one server, and you want to monitor it? You do need to have a server to run nines on, and you don't want to have your one server monitoring itself. If you have a shared hosting account that allows shell access, you can run nines there. Many hosts have an ancient version of ruby installed, but you can work around that with {rvm}[https://rvm.io/rvm/install/]. Here's how (tested on {Dreamhost}[http://dreamhost.com/r.cgi?1043337] <= referral link to support author):
+The config file can be in YAML or ruby format. Refer to the included examples: {nines.yml.sample}[https://github.com/anamba/nines/blob/master/nines.yml.sample] /  {nines.rb.sample}[https://github.com/anamba/nines/blob/master/nines.rb.sample]
+
+The simplest working config for a single web site (Ruby format):
+
+  Nines::App.config = {
+    contacts: {
+      'admin' => { email: 'admin@example.com' },
+    },
+    check_groups: [
+      { name: 'My Web Site',
+        parameters: { type: :http },
+        notify: [ { contact: 'admin' } ],
+        checks: [ 'www.asdf.com' ]
+      }
+    ]
+  }
+
+=Running nines in a shared hosting environment
+
+If you have multiple servers, you can have them monitor each other, but what if you have only one? You don't want to have your one server monitoring itself.
+
+If you have a shared hosting account that allows shell access, you may be able to run nines there (check with your host's policies on monitoring applications). Many hosts have an ancient version of ruby installed, but you can work around that with {rvm}[https://rvm.io/rvm/install/]. Here's how (tested on {Dreamhost}[http://dreamhost.com/r.cgi?1043337] <= referral link to support author):
 
  % \curl -L https://get.rvm.io | bash -s stable --ruby  # installs rvm and stable version of ruby
  % echo 'gem: --no-ri --no-rdoc' > ~/.gemrc             # gems install more quickly sans documentation
@@ -90,26 +111,6 @@ Example crontab (note the two different bin dirs for rvm):
  */15 * * * * nines -d -f /home/[username]/nines/nines.rb
 
 This will try to (re)start nines every 15 minutes. (If it is running, the command will just exit.)
-
-=Configuration
-
-The config file can be in YAML or ruby format. Refer to the included examples: {nines.yml.sample}[https://github.com/anamba/nines/blob/master/nines.yml.sample] /  {nines.rb.sample}[https://github.com/anamba/nines/blob/master/nines.rb.sample]
-
-The simplest working config for a single web site (Ruby format):
-
-  Nines::App.config = {
-    contacts: {
-      'admin' => { email: 'admin@example.com' },
-    },
-    check_groups: [
-      { name: 'My Web Site',
-        parameters: { type: :http },
-        notify: [ { contact: 'admin' } ],
-        checks: [ 'www.asdf.com' ]
-      }
-    ]
-  }
-
 
 
 =Dependencies
