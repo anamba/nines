@@ -38,6 +38,32 @@ module Nines
     def debug     ; self.class.debug    ; end
     def logger    ; self.class.logger   ; end
     
+    def running?
+      pid = nil
+      
+      begin
+        pid = File.open(pidfile).read.to_i
+        return false if pid == 0
+      rescue
+        # puts "Pidfile doesn't exist"
+        return false
+      end
+      
+      begin
+        Process.kill(0, pid)
+        # puts "#{pid} is running"
+        return true
+      rescue Errno::EPERM
+        # puts "No permission to query #{pid}!"
+      rescue Errno::ESRCH
+        # puts "#{pid} is NOT running."
+      rescue
+        # puts "Unable to determine status for #{pid} : #{$!}"
+      end
+      
+      false
+    end
+    
     def logfile_writable
       begin
         File.open(logfile, 'a') { }
@@ -170,20 +196,29 @@ module Nines
       logger.puts "[#{Time.now}] - nines finished"
       logger.close
       
+      File.unlink(pidfile)
+      
       puts "Background process finished"
     end
     
     def stop(options = {})
       begin
-        pid = File.read(self.class.pidfile).to_i
+        pid = File.read(pidfile).to_i
+        if pid == 0
+          STDERR.puts "nines does not appear to be running."
+          exit 1
+        end
       rescue Errno::ENOENT => e
-        STDERR.puts "Couldn't open pid file #{self.class.pidfile}, please check your config."
+        STDERR.puts "Couldn't open pid file #{pidfile}, please check your config."
         exit 1
       end
       
       begin
         Process.kill "INT", pid
         exit 0
+      rescue Errno::EPERM => e
+        STDERR.puts "Couldn't kill process with pid #{pid}, appears to be owned by someone else."
+        exit 1
       rescue Errno::ESRCH => e
         STDERR.puts "Couldn't kill process with pid #{pid}. Are you sure it's running?"
         exit 1

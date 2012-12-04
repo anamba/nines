@@ -48,6 +48,11 @@ when 'start'
   cmd_opts = Trollop.options do
   end
   
+  if app.running?
+    STDERR.puts "Nines appears to be running at pid #{File.open(app.pidfile).read}, exiting."
+    exit 1
+  end
+  
   app.start(cmd_opts)
   
 when 'stop'
