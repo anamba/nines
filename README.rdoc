@@ -52,7 +52,7 @@ Group checks according to check parameters and notification preferences:
     }
   ]
 
-Note: nines 1.0 supports email notifications only.
+Note: nines 1.0 supports email notifications only, but there are many ways to turn emails into other kinds of notifications (e.g. {Boxcar}[http://boxcar.io/]).
 
 =Usage
 
@@ -108,10 +108,9 @@ Example crontab (note the two different bin dirs for rvm):
  GEM_HOME=/home/[username]/.rvm/gems/ruby-1.9.3-p327
  GEM_PATH=/home/[username]/.rvm/gems/ruby-1.9.3-p327:/home/[username]/.rvm/gems/ruby-1.9.3-p327@global
  
- */15 * * * * nines -d -f /home/[username]/nines/nines.rb
+ */15 * * * * nines -d -f /home/[username]/nines/nines.rb 2>/dev/null
 
-This will try to (re)start nines every 15 minutes. (If it is running, the command will just exit.)
-
+This will try to (re)start nines every 15 minutes. If it is already running, the command will just exit. (The "already running" is printed to STDERR, so redirect that to /dev/null to keep cron from emailing that message to you every 15 minutes.)
 
 =Dependencies
 
