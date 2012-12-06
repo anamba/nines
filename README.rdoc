@@ -125,3 +125,5 @@ Dependencies:
 =License & Copyright
 
 Distributed under MIT license. Copyright (c) 2012 Aaron Namba <aaron@biggerbird.com>
+
+{<img src="https://travis-ci.org/anamba/nines.png" />}[https://travis-ci.org/anamba/nines]
