@@ -26,4 +26,6 @@ Gem::Specification.new do |s|
   s.add_dependency 'dnsruby',      '~> 1.53'
   s.add_dependency 'mail',         '~> 2.4'
   s.add_dependency 'trollop',      '~> 2.0'
+  
+  s.add_development_dependency 'rake'
 end
