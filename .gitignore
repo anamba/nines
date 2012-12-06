@@ -1,3 +1,5 @@
+Gemfile.lock
+
 # log and pid files
 nines.log
 nines.pid
