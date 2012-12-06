@@ -17,13 +17,13 @@ module Nines
       # load config files
       case File.extname(config_file)
         when '.yml' then self.class.config = YAML.load(ERB.new(File.read(config_file)).result)
-        when '.rb'  then require config_file
+        when '.rb'  then load config_file
       end
-      self.class.config = stringify_keys_and_symbols(self.class.config)
+      stringify_config!
       
       # set main parameters
-      self.class.debug      = config['debug']
-      self.class.verbose    = config['verbose']
+      self.class.debug      = config['debug'] || false
+      self.class.verbose    = config['verbose'] || false
       
       self.class.logfile    = config['logfile'] || 'nines.log'
       self.class.pidfile    = config['pidfile'] || 'nines.pid'
@@ -101,9 +101,9 @@ module Nines
     end
     
     def configure_smtp
-      if config['smtp'].is_a?(Hash)
+      if Nines::App.config['smtp'].is_a?(Hash)
         Mail.defaults do
-          delivery_method :smtp, { 
+          delivery_method :smtp, {
             :address => Nines::App.config['smtp']['address'] || 'localhost',
             :port => Nines::App.config['smtp']['port'] || 25,
             :domain => Nines::App.config['smtp']['domain'],
@@ -129,6 +129,10 @@ module Nines
       end
       
       obj
+    end
+    
+    def stringify_config!
+      self.class.config = stringify_keys_and_symbols(self.class.config)
     end
     
     def start(options = {})
